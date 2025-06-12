@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Fake News Detection</h1>
+        <button id="light">light Mode</button>
+        <form id="fake-news-form">
+            <label for="website_url">Enter Website URL:</label>
+            <input type="text" id="website_url" name="website_url" required>
+            <button type="button" id="detect-button">Predict</button>
+        </form>
+        <div id="result-container">
+        </div>
+    </div>
+
+    <div id="threejs-container"></div>
+
+    <script>
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const container = document.querySelector('.container');
+
+        darkModeToggle.addEventListener('click', () => {
+            container.classList.toggle('dark-mode');
+        });
+    </script>
+
+    <script>
+        document.getElementById('detect-button').addEventListener('click', function() {
+            var websiteUrl = document.getElementById('website_url').value;
+            var resultContainer = document.getElementById('result-container');
+
+            fetch('/detect_fake_news', {
+                method: 'POST',
+                body: new URLSearchParams({ 'website_url': websiteUrl }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                resultContainer.innerHTML = '<p>Detected Language: ' + data.detected_lang + '</p>' +
+                                      '<p>Original Text (' + data.detected_lang + '): ' + data.original_text + '</p>' +
+                                      '<p>Translated Headline (English): ' + data.translated_headline + '</p>' +
+                                      '<p>Classification: ' + data.classification + '</p>';
+            })
+            .catch(function(error) {
+                resultContainer.innerHTML = '<p>Error: ' + error.message + '</p>';
+            });
+        });
+    </script>
+
+    <script>
+        function createParticles(container) {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const particleCount = 500;
+    const particles = new THREE.BufferGeometry();
+    const positions = [];
+    for (let i = 0; i < particleCount; i++) {
+        positions.push((Math.random() - 0.5) * 100);
+        positions.push((Math.random() - 0.5) * 100);
+        positions.push((Math.random() - 0.5) * 100);
+    }
+    particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    const particleMaterial = new THREE.PointsMaterial({ 
+        color: 0xffffff, 
+        size: 1.5 
+    });
+    const pointCloud = new THREE.Points(particles, particleMaterial);
+    scene.add(pointCloud);
+
+    camera.position.z = 50;
+
+    const animate = () => {
+        requestAnimationFrame(animate);
+        pointCloud.rotation.x += 0.001;
+        pointCloud.rotation.y += 0.002;
+        renderer.render(scene, camera);
+    };
+
+    animate();
+}
+createParticles(document.getElementById('threejs-container'));
+
+    </script>
+</body>
+</html>
